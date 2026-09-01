@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<style>
+		:root {
+			color-scheme: light dark;
+		}
+		body {
+			margin: 0;
+			padding: 12px;
+			font: 13px/1.5 system-ui, sans-serif;
+		}
+		fieldset {
+			border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+			border-radius: 6px;
+			margin: 0 0 12px;
+		}
+		label {
+			display: block;
+			margin-bottom: 8px;
+		}
+		input {
+			display: block;
+			width: 220px;
+			padding: 4px 6px;
+			font: inherit;
+		}
+		button {
+			padding: 5px 12px;
+			font: inherit;
+			cursor: pointer;
+			margin-right: 6px;
+		}
+		#status {
+			min-height: 1.5em;
+			white-space: pre-wrap;
+		}
+		#status.error {
+			color: #d0021b;
+		}
+	</style>
+	<title>MiixProKey KeePass connector Options</title>
+</head>
+<body>
+	<form id="settings-form">
+		<fieldset>
+			<legend>Device</legend>
+			<label>
+				Hostname / IP address
+				<input id="host" type="text" required />
+			</label>
+			<label>
+				Port
+				<input id="port" type="number" min="1" max="65535" required />
+			</label>
+			<button type="submit">Save</button>
+			<button type="button" id="test">Test connection</button>
+		</fieldset>
+	</form>
+	<fieldset>
+		<legend>Association</legend>
+		<p id="association-info"></p>
+		<button type="button" id="associate">Connect (associate)</button>
+		<button type="button" id="forget">Forget association</button>
+	</fieldset>
+	<p id="status"></p>
+	<script src="options.js"></script>
+</body>
+</html>

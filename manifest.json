@@ -1,0 +1,58 @@
+{
+	"manifest_version": 2,
+	"name": "MiixKey Pro Connector",
+	"version": "0.1.0",
+	"description": "Connects Firefox to a MiixKey Pro hardware password manager using the legacy KeePassHTTP protocol.",
+	"homepage_url": "https://htu.miixpro.com/guide/miixkey-quick-start",
+	"browser_specific_settings": {
+		"gecko": {
+			"id": "miixkey-pro-connector@local",
+			"strict_min_version": "91.0"
+		}
+	},
+	"icons": {
+		"48": "icons/miixkey.svg",
+		"96": "icons/miixkey.svg"
+	},
+	"permissions": [
+		"storage",
+		"contextMenus",
+		"http://*/*",
+		"https://*/*"
+	],
+	"background": {
+		"scripts": [
+			"keepasshttp.js",
+			"background.js"
+		]
+	},
+	"content_scripts": [
+		{
+			"matches": [
+				"http://*/*",
+				"https://*/*"
+			],
+			"js": [
+				"content.js"
+			],
+			"run_at": "document_idle"
+		}
+	],
+	"browser_action": {
+		"default_title": "MiixKey Pro Connector",
+		"default_popup": "popup.html",
+		"default_icon": "icons/miixkey.svg"
+	},
+	"options_ui": {
+		"page": "options.html",
+		"open_in_tab": false
+	},
+	"commands": {
+		"fill-credentials": {
+			"suggested_key": {
+				"default": "Ctrl+Shift+L"
+			},
+			"description": "Fill the login form on the current page with MiixKey credentials"
+		}
+	}
+}

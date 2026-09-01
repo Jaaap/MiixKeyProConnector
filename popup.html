@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<style>
+		:root {
+			color-scheme: light dark;
+		}
+		body {
+			margin: 0;
+			width: 300px;
+			font: 13px/1.4 system-ui, sans-serif;
+		}
+		header {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			padding: 10px 12px;
+			border-bottom: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+		}
+		header img {
+			width: 20px;
+			height: 20px;
+		}
+		header h1 {
+			flex: 1;
+			margin: 0;
+			font-size: 14px;
+		}
+		header button {
+			border: none;
+			background: none;
+			font-size: 20px;
+			cursor: pointer;
+			padding: 2px 4px;
+		}
+		main {
+			padding: 12px;
+			display: flex;
+			flex-direction: column;
+			gap: 10px;
+		}
+		#status {
+			display: flex;
+			align-items: center;
+			gap: 7px;
+		}
+		#status-dot {
+			width: 9px;
+			height: 9px;
+			border-radius: 50%;
+			background: #d0021b;
+			flex: none;
+		}
+		#status-dot.connected {
+			background: #2da44e;
+		}
+		button.action {
+			padding: 7px 10px;
+			border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+			border-radius: 6px;
+			background: none;
+			color: inherit;
+			font: inherit;
+			cursor: pointer;
+			text-align: left;
+		}
+		button.action:hover:enabled {
+			background: color-mix(in srgb, currentColor 8%, transparent);
+		}
+		button.action:disabled {
+			opacity: 0.5;
+			cursor: default;
+		}
+		#entries {
+			display: flex;
+			flex-direction: column;
+			gap: 5px;
+			max-height: 220px;
+			overflow-y: auto;
+		}
+		#entries .entry-login {
+			display: block;
+			opacity: 0.65;
+			font-size: 12px;
+		}
+		#message {
+			font-size: 12px;
+			min-height: 1em;
+			white-space: pre-wrap;
+		}
+		#message.error {
+			color: #d0021b;
+		}
+	</style>
+	<title>MiixProKey KeePass connector</title>
+</head>
+<body>
+	<header>
+		<img src="icons/miixkey.svg" alt="" />
+		<h1>MiixKey Pro</h1>
+		<button id="open-options" title="Settings">&#9881;</button>
+	</header>
+	<main>
+		<div id="status">
+			<span id="status-dot"></span>
+			<span id="status-text">Checking&hellip;</span>
+		</div>
+		<button id="connect" class="action" hidden>Connect to MiixKey</button>
+		<button id="find-logins" class="action" hidden>&#128269; Find logins for this page</button>
+		<div id="entries"></div>
+		<div id="message"></div>
+	</main>
+	<script src="popup.js"></script>
+</body>
+</html>
