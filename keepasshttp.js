@@ -17,6 +17,13 @@ const KeePassHttp = (() => {
 	const DEFAULT_HOST = "172.16.8.1";
 	const DEFAULT_PORT = 19455;
 
+	// The MiixKey firmware (1.8.4.2) reads the request body into a buffer of
+	// roughly 2 KB and answers 400 "Invalid JSON" for anything longer. Url and
+	// SubmitUrl are both sent AES-encrypted and base64-encoded (~4/3 of the
+	// padded length), so the page URL must stay well under ~700 characters;
+	// 512 keeps a two-field get-logins request below 1.6 KB.
+	const MAX_URL_LENGTH = 512;
+
 	const textEncoder = new TextEncoder();
 	const textDecoder = new TextDecoder();
 
@@ -183,10 +190,31 @@ const KeePassHttp = (() => {
 		};
 	}
 
+	// Reduce a page URL to what the device matches on: scheme, host, port and
+	// path. The query string and fragment never take part in matching (and on
+	// OAuth pages they carry state/nonce/PKCE values that have no business on
+	// the device); they are also what makes URLs long enough to overflow the
+	// firmware's request buffer. The path is kept on purpose: the firmware does
+	// match on it for some entries, so host-only requests would lose logins.
+	// Non-http(s) or unparseable input is passed through, still length-capped.
+	function requestUrl(url) {
+		let compact = url;
+		try {
+			const parsed = new URL(url);
+			if (/^https?:$/.test(parsed.protocol)) {
+				compact = parsed.origin + parsed.pathname;
+			}
+		} catch {
+			// not an absolute URL; send it as given
+		}
+		return compact.length > MAX_URL_LENGTH ? compact.slice(0, MAX_URL_LENGTH) : compact;
+	}
+
 	async function getLogins(url, submitUrl) {
 		const { config, cryptoKey, iv, request } = await newRequest("get-logins");
-		request.Url = await encryptField(cryptoKey, iv, url);
-		request.SubmitUrl = await encryptField(cryptoKey, iv, submitUrl || url);
+		const pageUrl = requestUrl(url);
+		request.Url = await encryptField(cryptoKey, iv, pageUrl);
+		request.SubmitUrl = await encryptField(cryptoKey, iv, submitUrl ? requestUrl(submitUrl) : pageUrl);
 		const response = await send(config, request);
 		if (!response.Success) {
 			throw deviceError("MiixKey rejected the request. Approve it on the device, or connect again.", response);

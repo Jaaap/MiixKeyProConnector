@@ -44,7 +44,10 @@ globalThis.browser = {
 const server = {
 	key: null,
 	id: "TestBrowser",
-	tamperNextVerifier: false
+	tamperNextVerifier: false,
+	lastUrl: null,
+	lastSubmitUrl: null,
+	lastBodyBytes: 0
 };
 
 function serverEncrypt(keyBuf, ivBuf, text) {
@@ -101,8 +104,8 @@ function handleRequest(request) {
 			assert.strictEqual(request.Id, server.id);
 			assert.ok(verifierIsValid(request, server.key), "get-logins verifier must be valid");
 			const requestIv = Buffer.from(request.Nonce, "base64");
-			const url = serverDecrypt(server.key, requestIv, request.Url);
-			assert.strictEqual(url, "https://example.com/login", "server must receive the page URL");
+			server.lastUrl = serverDecrypt(server.key, requestIv, request.Url);
+			server.lastSubmitUrl = serverDecrypt(server.key, requestIv, request.SubmitUrl);
 			return respond(server.key, (iv) => ({
 				Count: 1,
 				Entries: [{
@@ -121,6 +124,7 @@ function handleRequest(request) {
 globalThis.fetch = async (url, options) => {
 	assert.strictEqual(url, "http://172.16.8.1:19455/", "client must POST to the configured endpoint");
 	assert.strictEqual(options.method, "POST");
+	server.lastBodyBytes = Buffer.byteLength(options.body, "utf8");
 	const response = handleRequest(JSON.parse(options.body));
 	return { ok: true, status: 200, json: async () => response };
 };
@@ -159,6 +163,29 @@ const KeePassHttp = new Function(`${source}; return KeePassHttp;`)();
 		password: "s3cret!",
 		uuid: "0123456789abcdef"
 	});
+	assert.strictEqual(server.lastUrl, "https://example.com/login", "server must receive the page URL");
+	assert.strictEqual(server.lastSubmitUrl, "https://example.com/login", "SubmitUrl must default to the page URL");
+
+	// The MiixKey firmware answers 400 "Invalid JSON" to request bodies over
+	// ~2 KB. The client therefore sends scheme://host/path only (query string
+	// and fragment never take part in matching) and caps the length.
+	await KeePassHttp.getLogins("https://example.com/login?client_id=abc&state=xyz%3D%3D#top");
+	assert.strictEqual(server.lastUrl, "https://example.com/login",
+		"query string and fragment must be stripped from Url");
+	assert.strictEqual(server.lastSubmitUrl, "https://example.com/login",
+		"query string and fragment must be stripped from the defaulted SubmitUrl");
+
+	await KeePassHttp.getLogins("https://example.com/login?x=1", "https://sso.example.com/auth?y=2#z");
+	assert.strictEqual(server.lastUrl, "https://example.com/login");
+	assert.strictEqual(server.lastSubmitUrl, "https://sso.example.com/auth",
+		"an explicit SubmitUrl must be normalised too");
+
+	const longUrl = "https://example.com/" + "p".repeat(900) + "?q=" + "v".repeat(900);
+	await KeePassHttp.getLogins(longUrl);
+	assert.strictEqual(server.lastUrl.length, 512, "over-long URLs must be capped at 512 characters");
+	assert.ok(server.lastUrl.startsWith("https://example.com/pppp"), "the cap must keep the start of the URL");
+	assert.ok(server.lastBodyBytes < 2048,
+		`a capped get-logins request must stay under the firmware's ~2 KB body limit (was ${server.lastBodyBytes} bytes)`);
 
 	server.tamperNextVerifier = true;
 	await assert.rejects(
